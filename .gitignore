@@ -1,0 +1,15 @@
+# Maven target
+**/target/**/*.*
+
+# Compiled class file
+*.class
+
+# Package Files
+*.jar
+
+# IDEA
+.idea/**/*.*
+**/*.iml
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
