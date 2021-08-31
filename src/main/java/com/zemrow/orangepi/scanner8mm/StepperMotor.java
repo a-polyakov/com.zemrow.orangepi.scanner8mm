@@ -7,7 +7,7 @@ import com.pi4j.io.gpio.PinState;
 import com.pi4j.wiringpi.Gpio;
 
 /**
- * TODO
+ * Bipolar stepper motor. Wave drive
  * https://3d-diy.ru/wiki/arduino-moduli/drayver-dvigatelya-l298n/
  * https://github.com/arduino-libraries/Stepper/blob/master/src/Stepper.cpp
  *
@@ -15,34 +15,62 @@ import com.pi4j.wiringpi.Gpio;
  */
 public class StepperMotor {
 
-    private static final int PERIOD = 8;
+    private static final int PERIOD = 4;
+    protected final int period;
+
+    /**
+     * delay between steps
+     */
+    private static final long STEP_DELAY = 4000;
+    protected final long step_delay;
 
     /**
      * motor pin
      */
-    GpioPinDigitalOutput motor_pin0;
-    GpioPinDigitalOutput motor_pin1;
-    GpioPinDigitalOutput motor_pin2;
-    GpioPinDigitalOutput motor_pin3;
+    protected final GpioPinDigitalOutput motor1pin0;
+    protected final GpioPinDigitalOutput motor1pin1;
+    protected final GpioPinDigitalOutput motor2pin2;
+    protected final GpioPinDigitalOutput motor2pin3;
 
-    /**
-     * delay between steps, in ms, based on speed
-     */
-    private static long step_delay = 4000;
     /**
      * which step the motor is on
      */
-    int step_number;
+    protected int step_number;
     /**
      * timestamp in us of when the last step was taken
      */
-    long last_step_time;
+    protected long last_step_time;
 
     public StepperMotor(GpioController gpio, Pin pin0, Pin pin1, Pin pin2, Pin pin3) {
-        this.motor_pin0 = gpio.provisionDigitalOutputPin(pin0, PinState.LOW);
-        this.motor_pin1 = gpio.provisionDigitalOutputPin(pin1, PinState.LOW);
-        this.motor_pin2 = gpio.provisionDigitalOutputPin(pin2, PinState.LOW);
-        this.motor_pin3 = gpio.provisionDigitalOutputPin(pin3, PinState.LOW);
+        this(gpio.provisionDigitalOutputPin(pin0, PinState.LOW),
+                gpio.provisionDigitalOutputPin(pin1, PinState.LOW),
+                gpio.provisionDigitalOutputPin(pin2, PinState.LOW),
+                gpio.provisionDigitalOutputPin(pin3, PinState.LOW));
+    }
+
+    public StepperMotor(GpioPinDigitalOutput motor1pin0,
+                        GpioPinDigitalOutput motor1pin1,
+                        GpioPinDigitalOutput motor2pin2,
+                        GpioPinDigitalOutput motor2pin3) {
+        this(motor1pin0,
+                motor1pin1,
+                motor2pin2,
+                motor2pin3, PERIOD, STEP_DELAY);
+    }
+
+    protected StepperMotor(GpioPinDigitalOutput motor1pin0,
+                           GpioPinDigitalOutput motor1pin1,
+                           GpioPinDigitalOutput motor2pin2,
+                           GpioPinDigitalOutput motor2pin3,
+                           int period,
+                           long step_delay
+    ) {
+        this.motor1pin0 = motor1pin0;
+        this.motor1pin1 = motor1pin1;
+        this.motor2pin2 = motor2pin2;
+        this.motor2pin3 = motor2pin3;
+        this.period = period;
+        this.step_delay = step_delay;
     }
 
     /*
@@ -64,23 +92,23 @@ public class StepperMotor {
                 // depending on direction:
                 if (steps_to_move > 0) {
                     step_number++;
-                    if (step_number == PERIOD) {
+                    if (step_number == period) {
                         step_number = 0;
                     }
                 } else {
                     if (step_number == 0) {
-                        step_number = PERIOD;
+                        step_number = period;
                     }
                     step_number--;
                 }
+                stepMotor(step_number);
                 // decrement the steps left:
                 steps_left--;
-                // step the motor to step number 0, 1, ..., {3 or 10}
-                stepMotor(step_number);
             } else {
+                // TODO Gpio.delayMicroseconds(-duration);
                 try {
                     final long sleep = -duration / 1000;
-                    if (sleep > 1 && sleep < step_delay / 1000){
+                    if (sleep > 1 && sleep < step_delay / 1000) {
                         Thread.sleep(sleep);
                     }
                 } catch (InterruptedException e) {
@@ -92,55 +120,31 @@ public class StepperMotor {
     /*
      * Moves the motor forward or backwards.
      */
-    private void stepMotor(int step_number) {
+    protected void stepMotor(int step_number) {
         switch (step_number) {
             case 0:
-                motor_pin1.low();
-                motor_pin2.low();
-                motor_pin3.low();
-                motor_pin0.high();
+                motor1pin1.low();
+                motor2pin2.low();
+                motor2pin3.low();
+                motor1pin0.high();
                 break;
             case 1:
-                motor_pin1.low();
-                motor_pin3.low();
-                motor_pin0.high();
-                motor_pin2.high();
+                motor1pin0.low();
+                motor1pin1.low();
+                motor2pin3.low();
+                motor2pin2.high();
                 break;
             case 2:
-                motor_pin0.low();
-                motor_pin1.low();
-                motor_pin3.low();
-                motor_pin2.high();
+                motor1pin0.low();
+                motor2pin2.low();
+                motor2pin3.low();
+                motor1pin1.high();
                 break;
             case 3:
-                motor_pin0.low();
-                motor_pin3.low();
-                motor_pin1.high();
-                motor_pin2.high();
-                break;
-            case 4:
-                motor_pin0.low();
-                motor_pin2.low();
-                motor_pin3.low();
-                motor_pin1.high();
-                break;
-            case 5:
-                motor_pin0.low();
-                motor_pin2.low();
-                motor_pin1.high();
-                motor_pin3.high();
-                break;
-            case 6:
-                motor_pin0.low();
-                motor_pin1.low();
-                motor_pin2.low();
-                motor_pin3.high();
-                break;
-            case 7:
-                motor_pin1.low();
-                motor_pin2.low();
-                motor_pin0.high();
-                motor_pin3.high();
+                motor1pin0.low();
+                motor1pin1.low();
+                motor2pin2.low();
+                motor2pin3.high();
                 break;
         }
     }
@@ -152,17 +156,18 @@ public class StepperMotor {
             // get the timeStamp of when you stepped:
             last_step_time = time;
         } else {
+            //TODO Gpio.delayMicroseconds(-duration);
             try {
                 final long sleep = -duration / 1000;
-                if (sleep > 1 && sleep < step_delay / 1000){
+                if (sleep > 1 && sleep < step_delay / 1000) {
                     Thread.sleep(sleep);
                 }
             } catch (InterruptedException e) {
             }
         }
-        motor_pin0.low();
-        motor_pin1.low();
-        motor_pin2.low();
-        motor_pin3.low();
+        motor1pin0.low();
+        motor1pin1.low();
+        motor2pin2.low();
+        motor2pin3.low();
     }
 }
