@@ -1,4 +1,4 @@
-package com.zemrow.orangepi.scanner8mm;
+package com.zemrow.orangepi.scanner8mm.motor;
 
 import com.pi4j.io.gpio.GpioController;
 import com.pi4j.io.gpio.GpioPinDigitalOutput;
@@ -12,7 +12,7 @@ import com.pi4j.io.gpio.PinState;
  *
  * @author Alexandr Polyakov on 2021.08.31
  */
-public class StepperMotor2 extends StepperMotor {
+public class StepperMotorL298N2 extends StepperMotorL298N {
 
     private static final int PERIOD = 8;
 
@@ -21,17 +21,17 @@ public class StepperMotor2 extends StepperMotor {
      */
     private static final long STEP_DELAY = 4000;
 
-    public StepperMotor2(GpioController gpio, Pin pin0, Pin pin1, Pin pin2, Pin pin3) {
+    public StepperMotorL298N2(GpioController gpio, Pin pin0, Pin pin1, Pin pin2, Pin pin3) {
         this(gpio.provisionDigitalOutputPin(pin0, PinState.LOW),
                 gpio.provisionDigitalOutputPin(pin1, PinState.LOW),
                 gpio.provisionDigitalOutputPin(pin2, PinState.LOW),
                 gpio.provisionDigitalOutputPin(pin3, PinState.LOW));
     }
 
-    public StepperMotor2(GpioPinDigitalOutput motor1pin0,
-                         GpioPinDigitalOutput motor1pin1,
-                         GpioPinDigitalOutput motor2pin2,
-                         GpioPinDigitalOutput motor2pin3) {
+    public StepperMotorL298N2(GpioPinDigitalOutput motor1pin0,
+                              GpioPinDigitalOutput motor1pin1,
+                              GpioPinDigitalOutput motor2pin2,
+                              GpioPinDigitalOutput motor2pin3) {
         super(motor1pin0, motor1pin1, motor2pin2, motor2pin3, PERIOD, STEP_DELAY);
     }
 
@@ -90,5 +90,10 @@ public class StepperMotor2 extends StepperMotor {
                 motor2pin3.high();
                 break;
         }
+    }
+
+    @Override
+    public void nextFrame() {
+        step(20);
     }
 }

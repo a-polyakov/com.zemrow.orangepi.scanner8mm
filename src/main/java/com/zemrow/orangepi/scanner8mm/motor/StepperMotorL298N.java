@@ -1,4 +1,4 @@
-package com.zemrow.orangepi.scanner8mm;
+package com.zemrow.orangepi.scanner8mm.motor;
 
 import com.pi4j.io.gpio.GpioController;
 import com.pi4j.io.gpio.GpioPinDigitalOutput;
@@ -13,7 +13,7 @@ import com.pi4j.wiringpi.Gpio;
  *
  * @author Alexandr Polyakov on 2021.08.26
  */
-public class StepperMotor {
+public class StepperMotorL298N implements IStepperMotor{
 
     private static final int PERIOD = 4;
     protected final int period;
@@ -41,29 +41,29 @@ public class StepperMotor {
      */
     protected long last_step_time;
 
-    public StepperMotor(GpioController gpio, Pin pin0, Pin pin1, Pin pin2, Pin pin3) {
+    public StepperMotorL298N(GpioController gpio, Pin pin0, Pin pin1, Pin pin2, Pin pin3) {
         this(gpio.provisionDigitalOutputPin(pin0, PinState.LOW),
                 gpio.provisionDigitalOutputPin(pin1, PinState.LOW),
                 gpio.provisionDigitalOutputPin(pin2, PinState.LOW),
                 gpio.provisionDigitalOutputPin(pin3, PinState.LOW));
     }
 
-    public StepperMotor(GpioPinDigitalOutput motor1pin0,
-                        GpioPinDigitalOutput motor1pin1,
-                        GpioPinDigitalOutput motor2pin2,
-                        GpioPinDigitalOutput motor2pin3) {
+    public StepperMotorL298N(GpioPinDigitalOutput motor1pin0,
+                             GpioPinDigitalOutput motor1pin1,
+                             GpioPinDigitalOutput motor2pin2,
+                             GpioPinDigitalOutput motor2pin3) {
         this(motor1pin0,
                 motor1pin1,
                 motor2pin2,
                 motor2pin3, PERIOD, STEP_DELAY);
     }
 
-    protected StepperMotor(GpioPinDigitalOutput motor1pin0,
-                           GpioPinDigitalOutput motor1pin1,
-                           GpioPinDigitalOutput motor2pin2,
-                           GpioPinDigitalOutput motor2pin3,
-                           int period,
-                           long step_delay
+    protected StepperMotorL298N(GpioPinDigitalOutput motor1pin0,
+                                GpioPinDigitalOutput motor1pin1,
+                                GpioPinDigitalOutput motor2pin2,
+                                GpioPinDigitalOutput motor2pin3,
+                                int period,
+                                long step_delay
     ) {
         this.motor1pin0 = motor1pin0;
         this.motor1pin1 = motor1pin1;
@@ -77,6 +77,7 @@ public class StepperMotor {
      * Moves the motor steps_to_move steps.  If the number is negative,
      * the motor moves in the reverse direction.
      */
+    @Override
     public void step(int steps_to_move) {
         int steps_left = Math.abs(steps_to_move);  // how many steps to take
 
@@ -149,6 +150,12 @@ public class StepperMotor {
         }
     }
 
+    @Override
+    public void enable() {
+        stepMotor(step_number);
+    }
+
+    @Override
     public void disable() {
         long time = Gpio.micros();
         final long duration = time - last_step_time - step_delay;
@@ -169,5 +176,10 @@ public class StepperMotor {
         motor1pin1.low();
         motor2pin2.low();
         motor2pin3.low();
+    }
+
+    @Override
+    public void nextFrame() {
+        step(10);
     }
 }

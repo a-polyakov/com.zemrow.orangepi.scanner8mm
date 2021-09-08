@@ -6,30 +6,25 @@ import com.pi4j.platform.Platform;
 import com.pi4j.platform.PlatformAlreadyAssignedException;
 import com.pi4j.platform.PlatformManager;
 import com.zemrow.orangepi.scanner8mm.motor.StepperMotorTB6600;
-import com.zemrow.orangepi.scanner8mm.ui.Scanner8mmFrame;
-
-import java.io.IOException;
 
 /**
  * TODO
+ * Подобрать скорость протяжки так чтобы совпали частоты обновления камеры и новый кадр на той-же позиции
  *
- * @author Alexandr Polyakov on 2021.08.26
+ * @author Alexandr Polyakov on 2021.09.06
  */
-public class RunScanner8mm {
-
-    public static void main(String[] args) throws PlatformAlreadyAssignedException, InterruptedException, IOException {
+public class TestSpeedScan {
+    public static void main(String[] args) throws PlatformAlreadyAssignedException {
         PlatformManager.setPlatform(Platform.ORANGEPI);
         final GpioController gpio = GpioFactory.getInstance();
 
         final StepperMotorTB6600 stepperMotor = new StepperMotorTB6600(gpio);
-        final IpCam ipCam = new IpCam();
-
-        ipCam.prepare();
         stepperMotor.enable();
-
-        new Scanner8mmFrame(stepperMotor, ipCam);
-
-//        tb6600.disable();
-//        gpio.shutdown();
+        for (int d = 60; d > 50; d -= 2) {
+            stepperMotor.step(-10 * 20 * 320, d);
+            System.out.println("delay:" + d);
+        }
+        stepperMotor.disable();
+        gpio.shutdown();
     }
 }

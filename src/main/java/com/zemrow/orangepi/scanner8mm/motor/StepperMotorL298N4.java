@@ -1,4 +1,4 @@
-package com.zemrow.orangepi.scanner8mm;
+package com.zemrow.orangepi.scanner8mm.motor;
 
 import com.pi4j.io.gpio.GpioController;
 import com.pi4j.io.gpio.GpioPinDigitalOutput;
@@ -13,7 +13,7 @@ import com.pi4j.io.gpio.PinState;
  *
  * @author Alexandr Polyakov on 2021.08.31
  */
-public class StepperMotor4 extends StepperMotor {
+public class StepperMotorL298N4 extends StepperMotorL298N {
 
     private static final int PERIOD = 16;
 
@@ -28,7 +28,7 @@ public class StepperMotor4 extends StepperMotor {
     protected final GpioPinPwmOutput motor1pinPwm;
     protected final GpioPinPwmOutput motor2pinPwm;
 
-    public StepperMotor4(GpioController gpio, Pin pin0, Pin pin1, Pin pin2, Pin pin3, Pin pin4, Pin pin5) {
+    public StepperMotorL298N4(GpioController gpio, Pin pin0, Pin pin1, Pin pin2, Pin pin3, Pin pin4, Pin pin5) {
         this(gpio.provisionDigitalOutputPin(pin0, PinState.LOW),
                 gpio.provisionDigitalOutputPin(pin1, PinState.LOW),
                 gpio.provisionDigitalOutputPin(pin2, PinState.LOW),
@@ -37,7 +37,7 @@ public class StepperMotor4 extends StepperMotor {
                 gpio.provisionSoftPwmOutputPin(pin5));
     }
 
-    public StepperMotor4(GpioPinDigitalOutput motor1pin0, GpioPinDigitalOutput motor1pin1, GpioPinDigitalOutput motor2pin2, GpioPinDigitalOutput motor2pin3, GpioPinPwmOutput motor1pinPwm, GpioPinPwmOutput motor2pinPwm) {
+    public StepperMotorL298N4(GpioPinDigitalOutput motor1pin0, GpioPinDigitalOutput motor1pin1, GpioPinDigitalOutput motor2pin2, GpioPinDigitalOutput motor2pin3, GpioPinPwmOutput motor1pinPwm, GpioPinPwmOutput motor2pinPwm) {
         super(motor1pin0, motor1pin1, motor2pin2, motor2pin3, PERIOD, STEP_DELAY);
         this.motor1pinPwm = motor1pinPwm;
         this.motor2pinPwm = motor2pinPwm;
@@ -182,9 +182,15 @@ public class StepperMotor4 extends StepperMotor {
         }
     }
 
+    @Override
     public void disable() {
         super.disable();
         motor1pinPwm.setPwm(0);
         motor2pinPwm.setPwm(0);
+    }
+
+    @Override
+    public void nextFrame() {
+        step(40);
     }
 }
