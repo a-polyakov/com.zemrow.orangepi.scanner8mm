@@ -1,7 +1,5 @@
 package com.zemrow.scanner8mm.opencv.ui;
 
-import com.zemrow.scanner8mm.opencv.transformation.open.TransformOpenPanel;
-import com.zemrow.scanner8mm.opencv.transformation.resize.TransformResizePanel;
 import com.zemrow.scanner8mm.opencv.transformation.AbstractTransform;
 import com.zemrow.scanner8mm.opencv.transformation.bilateralFilter.TransformBilateralFilter;
 import com.zemrow.scanner8mm.opencv.transformation.bilateralFilter.TransformBilateralFilterPanel;
@@ -11,12 +9,16 @@ import com.zemrow.scanner8mm.opencv.transformation.cvtcolor.TransformCvtColor;
 import com.zemrow.scanner8mm.opencv.transformation.cvtcolor.TransformCvtColorPanel;
 import com.zemrow.scanner8mm.opencv.transformation.gaussianBlur.TransformGaussianBlur;
 import com.zemrow.scanner8mm.opencv.transformation.gaussianBlur.TransformGaussianBlurPanel;
+import com.zemrow.scanner8mm.opencv.transformation.houghLines.TransformHoughLines;
+import com.zemrow.scanner8mm.opencv.transformation.houghLines.TransformHoughLinesPanel;
 import com.zemrow.scanner8mm.opencv.transformation.inrange.TransformInRange;
 import com.zemrow.scanner8mm.opencv.transformation.inrange.TransformInRangePanel;
 import com.zemrow.scanner8mm.opencv.transformation.medianBlur.TransformMedianBlur;
 import com.zemrow.scanner8mm.opencv.transformation.medianBlur.TransformMedianBlurPanel;
 import com.zemrow.scanner8mm.opencv.transformation.open.TransformOpen;
+import com.zemrow.scanner8mm.opencv.transformation.open.TransformOpenPanel;
 import com.zemrow.scanner8mm.opencv.transformation.resize.TransformResize;
+import com.zemrow.scanner8mm.opencv.transformation.resize.TransformResizePanel;
 
 import javax.swing.JScrollPane;
 import java.util.HashMap;
@@ -44,6 +46,7 @@ public class TransformEditPanel extends JScrollPane {
         panels.put(TransformBilateralFilter.class, new TransformBilateralFilterPanel());
         panels.put(TransformGaussianBlur.class, new TransformGaussianBlurPanel());
         panels.put(TransformCanny.class, new TransformCannyPanel());
+        panels.put(TransformHoughLines.class, new TransformHoughLinesPanel());
     }
 
     public void setTransform(AbstractTransform transform) {

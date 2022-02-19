@@ -6,7 +6,7 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 /**
- * размытие
+ * Размытие
  *
  * @author Alexandr Polyakov on 2022.02.12
  * @see <a href="https://www.tutorialspoint.com/opencv/opencv_gaussian_blur.htm">GaussianBlur</a>

@@ -6,6 +6,7 @@ import com.zemrow.scanner8mm.opencv.ui.numberField.DoubleModel;
 import com.zemrow.scanner8mm.opencv.ui.numberField.IntegerField;
 import com.zemrow.scanner8mm.opencv.ui.numberField.UnevenIntegerModel;
 
+import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -26,30 +27,32 @@ public class TransformCannyPanel extends AbstractTransformPanel<TransformCanny> 
     private final JCheckBox l2gradient;
 
     public TransformCannyPanel() {
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+
         JPanel row = new JPanel();
         add(row);
         row.add(new JLabel("threshold1"));
         //TODO limit
-        threshold1 = new DoubleField(new DoubleModel(0, 0, 2000, 1));
+        threshold1 = new DoubleField(new DoubleModel(0, 0, 4000, 1));
         threshold1.setChangeListener(this);
         row.add(threshold1);
 
-        new JPanel();
+        row=new JPanel();
         add(row);
         row.add(new JLabel("threshold2"));
         //TODO limit
-        threshold2 = new DoubleField(new DoubleModel(0, 0, 2000, 1));
+        threshold2 = new DoubleField(new DoubleModel(0, 0, 4000, 1));
         threshold2.setChangeListener(this);
         row.add(threshold2);
 
-        new JPanel();
+        row=new JPanel();
         add(row);
         row.add(new JLabel("apertureSize"));
-        apertureSize = new IntegerField(new UnevenIntegerModel(3, 3, 7, 1));
+        apertureSize = new IntegerField(new UnevenIntegerModel(3, 3, 7, 2));
         apertureSize.setChangeListener(this);
         row.add(apertureSize);
 
-        new JPanel();
+        row=new JPanel();
         add(row);
         row.add(new JLabel("l2gradient"));
         l2gradient = new JCheckBox("l2gradient");

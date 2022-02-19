@@ -12,7 +12,9 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
@@ -25,21 +27,31 @@ import java.awt.GridLayout;
 import java.awt.HeadlessException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.logging.Logger;
 
 /**
  * TODO
  * TODO добавить возможность результат трансформации сохранить как Java код
  * TODO удаление строчки
+ * <p>
+ * TODO Кадрирование crop
+ * TODO Поворот getRotationMatrix2D
+ * TODO CascadeClassifier
  *
  * @author Alexandr Polyakov on 2022.02.12
  */
-public class RunOpenCV extends JFrame implements ListSelectionListener, ActionListener {
+public class RunOpenCV extends JFrame implements ListSelectionListener, ActionListener, MouseListener {
 
     private final Logger log = Logger.getLogger(getClass().getName());
 
     private final JLabel image;
     private final JTable table;
+    private final JPopupMenu rowPopupMenu;
+    private final JMenuItem upMenuItem;
+    private final JMenuItem downMenuItem;
+    private final JMenuItem deleteMenuItem;
     private final TransformationTableModel tableModel;
     private final JComboBox<TransformEnum> comboBox;
     private final JButton addButton;
@@ -61,8 +73,20 @@ public class RunOpenCV extends JFrame implements ListSelectionListener, ActionLi
         table.setFillsViewportHeight(true);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getSelectionModel().addListSelectionListener(this);
+        table.addMouseListener(this);
         final JScrollPane tableScroll = new JScrollPane(table);
         rightTop.add(tableScroll, BorderLayout.CENTER);
+
+        rowPopupMenu = new JPopupMenu();
+        upMenuItem = new JMenuItem("Up");
+        upMenuItem.addActionListener(this);
+        rowPopupMenu.add(upMenuItem);
+        downMenuItem = new JMenuItem("Down");
+        downMenuItem.addActionListener(this);
+        rowPopupMenu.add(downMenuItem);
+        deleteMenuItem = new JMenuItem("Delete");
+        deleteMenuItem.addActionListener(this);
+        rowPopupMenu.add(deleteMenuItem);
 
         JPanel addPanel = new JPanel(new BorderLayout());
         rightTop.add(addPanel, BorderLayout.SOUTH);
@@ -92,13 +116,15 @@ public class RunOpenCV extends JFrame implements ListSelectionListener, ActionLi
             return;
         log.info("valueChanged");
         final AbstractTransform transform = updateImage();
-        transformEditPanel.setTransform(transform);
+        if (transform != null) {
+            transformEditPanel.setTransform(transform);
+        }
     }
 
     public AbstractTransform updateImage() {
         AbstractTransform transform = null;
         int rowIndex = table.getSelectedRow();
-        log.info("updateImage rowIndex:"+rowIndex);
+        log.info("updateImage rowIndex:" + rowIndex);
         if (rowIndex >= 0) {
             transform = tableModel.getTransform(rowIndex);
             ImageIcon imageIcon = transform.getImage();
@@ -118,7 +144,49 @@ public class RunOpenCV extends JFrame implements ListSelectionListener, ActionLi
             // TODO insert after select row
             int rowIndex = tableModel.addTransform(select.newInstance());
             table.setRowSelectionInterval(rowIndex, rowIndex);
+        } else if (upMenuItem == source) {
+            tableModel.upRow(table.getSelectedRow());
+        } else if (downMenuItem == source) {
+            tableModel.downRow(table.getSelectedRow());
+        } else if (deleteMenuItem == source) {
+            tableModel.removeRow(table.getSelectedRow());
         }
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent event) {
+        Object source = event.getSource();
+        if (table == source) {
+            if (event.isPopupTrigger()) {
+                int row = table.rowAtPoint(event.getPoint());
+                table.setRowSelectionInterval(row, row);
+                if (row > 0) {
+                    upMenuItem.setEnabled(row > 1);
+                    downMenuItem.setEnabled(row < table.getRowCount() - 1);
+                    rowPopupMenu.show(event.getComponent(), event.getX(), event.getY());
+                }
+            }
+        }
+    }
+
+    @Override
+    public void mouseEntered(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseExited(MouseEvent e) {
+
     }
 
     public static void main(String[] args) {

@@ -15,8 +15,8 @@ import org.opencv.imgproc.Imgproc;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * TODO
@@ -27,60 +27,81 @@ import java.util.List;
  * @author Alexandr Polyakov on 2022.02.12
  */
 public class RunPostProcessing {
+
+    public static final double SCALE = 0.6;
+    public static final double FRAME_WIDTH_PERCENT = 1.36;
+    public static final double FRAME_HEIGHT_TOP_PERCENT = 0.57;
+    public static final double FRAME_HEIGHT_BUTTON_PERCENT = -0.45;
+    public static final int FRAME_WIDTH = 1024;
+    public static final int FRAME_HEIGHT = 768;
+
     public static void main(String[] args) throws IOException {
 
         OpenCV.loadShared();
 
-        File sourceDir = new File("D:\\temp\\8mm\\001");
-        File targetDir = new File("D:\\temp\\8mm\\002");
+        final File sourceDir = new File("D:\\temp\\8mm\\001");
+        final File targetDir = new File("D:\\temp\\8mm\\002");
+        final File errorDir = new File("D:\\temp\\8mm\\error");
+
 //        processing(new File("D:\\temp\\8mm\\001\\0005.jpg"), targetDir);
-        for (File file : sourceDir.listFiles()) {
+
+        Stream.of(sourceDir.listFiles()).parallel().forEach(file -> {
             try {
-                processing(file, targetDir);
+                processing(file, targetDir, errorDir);
             } catch (Exception e) {
                 System.err.println("Processing error " + file.getAbsolutePath());
                 e.printStackTrace();
             }
-        }
+        });
+
+//        for (File file : sourceDir.listFiles()) {
+//            try {
+//                processing(file, targetDir);
+//            } catch (Exception e) {
+//                System.err.println("Processing error " + file.getAbsolutePath());
+//                e.printStackTrace();
+//            }
+//        }
     }
 
-    private static void processing(File source, File targetDir) {
-        String filename = source.getAbsolutePath();
+    private static void processing(File source, File targetDir, File errorDir) {
+        final String filename = source.getAbsolutePath();
         System.out.println("Processing " + filename);
-        Mat sourceImage = Imgcodecs.imread(filename);
-//        new ImageFrame(sourceImage, "sourceImage");
-
+        final Mat sourceImage = Imgcodecs.imread(filename);
         boolean debug = false;
+        if (debug) {
+            new ImageFrame(sourceImage, "sourceImage");
+        }
 
         // уменьшить в размере
-        Mat smallImage = new Mat();
-        Imgproc.resize(sourceImage, smallImage, new Size(), 0.6, 0.6);
+        final Mat smallImage = new Mat();
+        Imgproc.resize(sourceImage, smallImage, new Size(), SCALE, SCALE);
+        sourceImage.release();
         if (debug) {
             new ImageFrame(smallImage, "smallImage");
         }
 
-//        Imgcodecs.imwrite(new File(targetDir, source.getName()).getAbsolutePath(), smallImage);
-//        System.exit(0);
-
         // размытие
-        Mat blur = new Mat();
+        final Mat blur = new Mat();
         Imgproc.medianBlur(smallImage, blur, 33);
         if (debug) {
             new ImageFrame(blur, "blur");
         }
 
         // конвертация цветов
-        Mat imgHSV = new Mat();
+        final Mat imgHSV = new Mat();
         Imgproc.cvtColor(blur, imgHSV, Imgproc.COLOR_HSV2BGR);
+        blur.release();
         if (debug) {
             new ImageFrame(imgHSV, "imgHSV");
         }
 
         // Поиск цвета
-        Scalar lower = new Scalar(0, 221, 58);
-        Scalar upper = new Scalar(121, 255, 255);
-        Mat range = new Mat();
+        final Scalar lower = new Scalar(0, 221, 58);
+        final Scalar upper = new Scalar(121, 255, 255);
+        final Mat range = new Mat();
         Core.inRange(imgHSV, lower, upper, range);
+        imgHSV.release();
         if (debug) {
             new ImageFrame(range, "range");
         }
@@ -97,50 +118,59 @@ public class RunPostProcessing {
 //        new ImageFrame(imgDil, "imgDil");
 
 //         Поиск линий
-//        Mat lines = new Mat();
 //        Mat grey=new Mat();
 //        Imgproc.cvtColor(blur, grey, Imgproc.COLOR_BGR2GRAY);
 //        new ImageFrame(grey, "grey");
 //        Mat edges=new Mat();
-//        Imgproc.Canny(grey, edges, 60,60*3);
+//        Imgproc.Canny(grey, edges, 20.0, 50, 3, true);
 //        new ImageFrame(edges, "edges");
-//        Imgproc.HoughLinesP(edges, lines, 1, Math.PI/2, 2, 30, 1);
-//        new ImageFrame(lines, "lines");
-////        Imgproc.line(img, pt1, pt2, (0,0,255), 3)
+//        Mat lines = new Mat();
+//        Imgproc.HoughLinesP(edges, lines, 1.0, 0.01, 30, 400.0, 25.0);
+//        Mat drawLine=grey.clone();
+//        for (int x = 0; x < lines.rows(); x++) {
+//            double[] l = lines.get(x, 0);
+//            Imgproc.line(drawLine, new Point(l[0], l[1]), new Point(l[2], l[3]), new Scalar(0, 0, 255), 3, Imgproc.LINE_AA, 0);
+//        }
+//        new ImageFrame(drawLine, "drawLine");
+//
+//
 //        if (debug) return;
 
 //
         // Поиск фигур
-        List<MatOfPoint> contours = new ArrayList<>();
-        Mat hierarchy = new Mat();
+        final List<MatOfPoint> contours = new ArrayList<>();
+        final Mat hierarchy = new Mat();
         Imgproc.findContours(range, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+        range.release();
+        hierarchy.release();
         if (debug) {
             System.out.println("contours.size:" + contours.size());
-            Mat drawContours = smallImage.clone();
+            final Mat drawContours = smallImage.clone();
             Imgproc.drawContours(drawContours, contours, -1, new Scalar(255, 0, 255));
             new ImageFrame(drawContours, "drawContours");
+            drawContours.release();
         }
 
-        double minArea = 20000;
-        double maxArea = 40000;
-        List<MatOfPoint> need = new ArrayList<>();
+        // поиск перфорации
+        final List<MatOfPoint> need = new ArrayList<>();
         Point point1 = null;
         Point point2 = null;
         for (MatOfPoint contour : contours) {
-            double area = Imgproc.contourArea(contour);
+//            double area = Imgproc.contourArea(contour);
 //            System.out.println("Area " + area);
-            if (area > minArea && area < maxArea) {
-                MatOfPoint2f contour2 = new MatOfPoint2f(contour.toArray());
-                double arcLength = Imgproc.arcLength(contour2, true);
+            final Point[] points = contour.toArray();
+            if (isPerf(points)) {
+
+//                double arcLength = Imgproc.arcLength(contour2, true);
 //                System.out.println("arcLength " + arcLength);
-                MatOfPoint2f contour3 = new MatOfPoint2f();
-                Imgproc.approxPolyDP(contour2, contour3, 0.04 * arcLength, true);
-                if (debug) {
-                    System.out.println("approxPolyDP " + contour3.size());
-                    Imgproc.drawContours(smallImage, Collections.singletonList(new MatOfPoint(contour3.toArray())), -1, new Scalar(255, 0, 255));
-                    new ImageFrame(smallImage, "approxPolyDP");
-                }
-                Point[] points = contour3.toArray();
+//                MatOfPoint2f contour3 = new MatOfPoint2f();
+//                Imgproc.approxPolyDP(contour2, contour3, 0.04 * arcLength, true);
+//                if (debug) {
+//                    System.out.println("approxPolyDP " + contour3.size());
+//                    Imgproc.drawContours(smallImage, Collections.singletonList(new MatOfPoint(contour3.toArray())), -1, new Scalar(255, 0, 255));
+//                    new ImageFrame(smallImage, "approxPolyDP");
+//                }
+//                Point[] points = contour3.toArray();
                 double x1 = points[0].x;
                 double x2 = points[0].x;
                 double y = 0;
@@ -158,48 +188,94 @@ public class RunPostProcessing {
                     point2 = new Point((x2 + x1) / 2, y);
                 } else {
                     Imgproc.circle(smallImage, new Point((x2 + x1) / 2, y), 5, new Scalar(255, 0, 255));
-                    new ImageFrame(smallImage, "Лишняя точка");
+//                    new ImageFrame(smallImage, "Лишняя точка");
                 }
-                need.add(new MatOfPoint(points));
+                need.add(contour);
             } else {
-                System.out.println("Small area " + area);
+                contour.release();
+                //System.out.println("Small area " + area);
             }
         }
+        if (need.size() != 2) {
+            Imgproc.drawContours(smallImage, need, -1, new Scalar(255, 0, 255));
+            for (MatOfPoint contour:need){
+                contour.release();
+            }
+            if (debug) {
+                 new ImageFrame(smallImage, filename+", need contours size != 2");
+            }
+            Imgcodecs.imwrite(new File(errorDir, source.getName()).getAbsolutePath(), smallImage);
+            smallImage.release();
+            return;
+        }
+
         if (debug) {
             Imgproc.circle(smallImage, point1, 5, new Scalar(255, 0, 255));
             Imgproc.circle(smallImage, pointInLine(point1, point2, 0), 5, new Scalar(255, 0, 255));
             Imgproc.circle(smallImage, point2, 5, new Scalar(255, 0, 255));
-            Imgproc.circle(smallImage, pointInLine(point1, point2, 0.57), 5, new Scalar(255, 0, 255));
-            Imgproc.circle(smallImage, pointInLine(point1, point2, -0.445), 5, new Scalar(255, 0, 255));
-            Imgproc.circle(smallImage, pointInParallelLine(point1, point2, 0.57, 1.36), 5, new Scalar(255, 0, 255));
-            Imgproc.circle(smallImage, pointInParallelLine(point1, point2, -0.445, 1.36), 5, new Scalar(255, 0, 255));
-            new ImageFrame(smallImage, "drawContours");
+            Imgproc.circle(smallImage, pointInLine(point1, point2, FRAME_HEIGHT_TOP_PERCENT), 5, new Scalar(255, 0, 255));
+            Imgproc.circle(smallImage, pointInLine(point1, point2, FRAME_HEIGHT_BUTTON_PERCENT), 5, new Scalar(255, 0, 255));
+            Imgproc.circle(smallImage, pointInParallelLine(point1, point2, FRAME_HEIGHT_TOP_PERCENT, FRAME_WIDTH_PERCENT), 5, new Scalar(255, 0, 255));
+            Imgproc.circle(smallImage, pointInParallelLine(point1, point2, FRAME_HEIGHT_BUTTON_PERCENT, FRAME_WIDTH_PERCENT), 5, new Scalar(255, 0, 255));
+            new ImageFrame(smallImage, "draw frame");
         }
 
         // Преобразование перспективы (Поворот, растягивание, обрезка)
-        MatOfPoint2f findPoints = new MatOfPoint2f(
-                pointInLine(point1, point2, -0.445), pointInParallelLine(point1, point2, -0.445, 1.36),
-                pointInLine(point1, point2, 0.565), pointInParallelLine(point1, point2, 0.565, 1.36)
+        final MatOfPoint2f findPoints = new MatOfPoint2f(
+                pointInLine(point1, point2, FRAME_HEIGHT_BUTTON_PERCENT), pointInParallelLine(point1, point2, FRAME_HEIGHT_BUTTON_PERCENT, FRAME_WIDTH_PERCENT),
+                pointInLine(point1, point2, FRAME_HEIGHT_TOP_PERCENT), pointInParallelLine(point1, point2, FRAME_HEIGHT_TOP_PERCENT, FRAME_WIDTH_PERCENT)
         );
-//        for (Point point: source.toList()) {
-//            Imgproc.circle(smallImage, point, 5, new Scalar(255,0,255));
-//        }
-//        new ImageFrame(smallImage, "draw frame");
-
-        int w = 1024;
-        int h = 768;
-        MatOfPoint2f target = new MatOfPoint2f(
-                new Point(0, 0), new Point(w, 0),
-                new Point(0, h), new Point(w, h)
+        final MatOfPoint2f target = new MatOfPoint2f(
+                new Point(0, 0), new Point(FRAME_WIDTH, 0),
+                new Point(0, FRAME_HEIGHT), new Point(FRAME_WIDTH, FRAME_HEIGHT)
         );
-        Mat matrix = Imgproc.getPerspectiveTransform(findPoints, target);
-        Mat imgWrap = new Mat();
-        Imgproc.warpPerspective(smallImage, imgWrap, matrix, new Size(w, h));
+        final Mat matrix = Imgproc.getPerspectiveTransform(findPoints, target);
+        findPoints.release();
+        target.release();
+        final Mat imgWrap = new Mat();
+        Imgproc.warpPerspective(smallImage, imgWrap, matrix, new Size(FRAME_WIDTH, FRAME_HEIGHT));
+        smallImage.release();
+        matrix.release();
         if (debug) {
             new ImageFrame(imgWrap, "imgWrap");
         }
 
         Imgcodecs.imwrite(new File(targetDir, source.getName()).getAbsolutePath(), imgWrap);
+        imgWrap.release();
+    }
+
+    public static double perfMinX = 200 * SCALE;
+    public static double perfMaxX = 1100 * SCALE;
+    public static double perfMinHeight = 200 * SCALE;
+    public static double perfMaxHeight = 500 * SCALE;
+
+    /**
+     * перфорации
+     *
+     * @param points
+     * @return
+     */
+    public static boolean isPerf(Point[] points) {
+        double x1 = points[0].x;
+        double x2 = x1;
+        double y1 = points[0].y;
+        double y2 = y1;
+        for (Point point : points) {
+            if (x1 > point.x) {
+                x1 = point.x;
+            } else if (x2 < point.x) {
+                x2 = point.x;
+            }
+
+            if (y1 > point.y) {
+                y1 = point.y;
+            } else if (y2 < point.y) {
+                y2 = point.y;
+            }
+        }
+        final double height = y2 - y1;
+        boolean result = (x1 >= perfMinX) && (x2 <= perfMaxX) && (height >= perfMinHeight) && (height <= perfMaxHeight);
+        return result;
     }
 
     private static Point pointInLine(Point point1, Point point2, double t) {

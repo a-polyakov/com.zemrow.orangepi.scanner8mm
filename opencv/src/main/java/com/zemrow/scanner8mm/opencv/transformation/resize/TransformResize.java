@@ -6,6 +6,7 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 /**
+ * Изменение размера
  * TODO
  *
  * @author Alexandr Polyakov on 2022.02.12
@@ -13,7 +14,13 @@ import org.opencv.imgproc.Imgproc;
 public class TransformResize extends AbstractTransform {
 
     // TODO Size
+    /**
+     * Процент от изначального размера
+     */
     private double fx;
+    /**
+     * Процент от изначального размера
+     */
     private double fy;
 
     public TransformResize() {

@@ -4,6 +4,7 @@ import com.zemrow.scanner8mm.opencv.transformation.bilateralFilter.TransformBila
 import com.zemrow.scanner8mm.opencv.transformation.canny.TransformCanny;
 import com.zemrow.scanner8mm.opencv.transformation.cvtcolor.TransformCvtColor;
 import com.zemrow.scanner8mm.opencv.transformation.gaussianBlur.TransformGaussianBlur;
+import com.zemrow.scanner8mm.opencv.transformation.houghLines.TransformHoughLines;
 import com.zemrow.scanner8mm.opencv.transformation.inrange.TransformInRange;
 import com.zemrow.scanner8mm.opencv.transformation.medianBlur.TransformMedianBlur;
 import com.zemrow.scanner8mm.opencv.transformation.resize.TransformResize;
@@ -50,10 +51,16 @@ public enum TransformEnum {
             return new TransformGaussianBlur();
         }
     },
-    CANNY{
+    CANNY {
         @Override
         public AbstractTransform newInstance() {
             return new TransformCanny();
+        }
+    },
+    HOUGH_LINES {
+        @Override
+        public AbstractTransform newInstance() {
+            return new TransformHoughLines();
         }
     };
 

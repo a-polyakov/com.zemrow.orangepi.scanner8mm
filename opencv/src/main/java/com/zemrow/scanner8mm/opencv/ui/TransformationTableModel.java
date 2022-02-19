@@ -1,7 +1,7 @@
 package com.zemrow.scanner8mm.opencv.ui;
 
-import com.zemrow.scanner8mm.opencv.transformation.AbstractTransform;
 import com.zemrow.scanner8mm.opencv.RunOpenCV;
+import com.zemrow.scanner8mm.opencv.transformation.AbstractTransform;
 import org.opencv.core.Mat;
 
 import javax.swing.event.ChangeEvent;
@@ -119,5 +119,28 @@ public class TransformationTableModel extends AbstractTableModel implements Chan
         }
         // TODO
         transformationFrame.updateImage();
+    }
+
+    public void upRow(int lastRow) {
+        AbstractTransform temp = data.get(lastRow);
+        int firstRow = lastRow - 1;
+        data.set(lastRow, data.get(firstRow));
+        data.set(firstRow, temp);
+        transformChain(firstRow);
+        fireTableRowsUpdated(firstRow, lastRow);
+    }
+
+    public void downRow(int firstRow) {
+        AbstractTransform temp = data.get(firstRow);
+        int lastRow = firstRow + 1;
+        data.set(firstRow, data.get(lastRow));
+        data.set(lastRow, temp);
+        transformChain(firstRow);
+        fireTableRowsUpdated(firstRow, lastRow);
+    }
+
+    public void removeRow(int row) {
+        data.remove(row);
+        fireTableRowsDeleted(row, row);
     }
 }
